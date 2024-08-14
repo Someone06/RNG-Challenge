@@ -3,36 +3,6 @@
 #include <cstdint>
 #include <iostream>
 
-/*
- * Notes: This challenge essentially benchmarks a random-number generator for
- * speed. If a (cryptographically) secure random-number generator is used, than
- * the bottleneck of the computation will be the speed at which the compute can
- * collect entropy (aka. "randomness") from outside sources. This can be done by
- * using the mouse input of the user, network latencies or using Cloudflares's 
- * famous lava-lamps. The collection of entropy is typically so slow that it
- * completely dominates the computation time meaning any other optimization is
- * basically useless.
- * 
- * More interesting optimizations can be performed if a (non-secure)
- * pseudo-random number generator suffices which should the case for a simple
- * simulation. In this case the wall-clock time that the computation requires
- * mainly comes down to how complicated the random-number generation algorithms
- * is, as well as how well hardware resources are utilized. A simple pseudo RNG
- * can be computed not only on all cores of a CPU (while exploiting vector
- * instructions for even more computations per second) but can even be
- * implemented on GPUs which are blazingly fast compared to CPUs.
- *
- * That said, here is the code for a simulation that uses an extremely simple
- * pseudo-random number generator, running on a single core without explicit
- * vectorization. The computation of 1'000'000'000 still only takes about 36
- * seconds on my Raspberry Pie 5B.
- *
- * Compiler instruction: 
- *	g++ -O3 -std=c++20 -Wall -Wextra random.cpp
- *
- * Enjoy!
- */
-
 static inline constexpr std::uint32_t lowerHalfSet
     {(static_cast<std::uint32_t>(1) << 16) - 1};
 
@@ -46,13 +16,11 @@ static inline constexpr std::uint32_t lowerHalfSet
     return (v << 16) + (u & lowerHalfSet);
 }
 
-
-
 static inline constexpr std::uint32_t alternatingBitmask {0xAAAAAAAA};
 
 /*
  * A 32-bit number has 16 pairs bits. If every bit has a 50/50 chance of being 0 
- * or 1, than the probability of a pair of bits being 00 is 1/4. Thus we can 
+ * or 1, than the probability of a pair of bits being 11 is 1/4. Thus we can 
  * extract 16 1/4 chances from a 32-bit number.
  */
 [[nodiscard]] constexpr std::uint32_t countPairwiseZeroBits(std::uint32_t n) 
@@ -70,7 +38,7 @@ static inline constexpr std::uint32_t completeAttempts
     {attempts / numberOfExtractedPairs};
 
 static inline constexpr std::uint32_t remainingAttempts 
-    {attempts / numberOfExtractedPairs};
+    {attempts % numberOfExtractedPairs};
 
 static inline constexpr std::uint32_t remainingAttemptsBitmask 
     {(1 << remainingAttempts * 2) - 1};
